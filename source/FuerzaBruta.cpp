@@ -10,15 +10,36 @@ double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz
 }
 
 std::vector<int> FB(const std::vector<std::vector<double>>& energia, int fila, std::vector<int> mejor, std::vector<int> actual) {
-    if(fila == energia.size()){
+    if(fila == energia.size()-1){
         if(calcularEnergiaSeam(energia, actual) < calcularEnergiaSeam(energia, mejor)){
             mejor = actual;
             return mejor;
         }
 
     }
+
+    if(fila==0){
+        for (int col=0; col < energia[1].size(); col++){
+            actual.push_back(col);
+            FB(energia, fila+1, mejor, actual);
+            actual.pop_back();
+
+            if(col>0){ // primer columna
+                actual.push_back(col-1);
+                FB(energia, fila+1, mejor, actual);
+                actual.pop_back();
+            }
+            if(col<energia[1].size()){ // ultima columna
+                actual.push_back(col+1);
+                FB(energia, fila+1, mejor, actual);
+                actual.pop_back();
+            }
+        }
+    }
+
     else{
-        for (int col=0; col < energia[1].size()-1; col++){
+        int ult_columna = actual[fila-1];
+        for (int col=ult_columna-1; col <= ult_columna+1; col++){
             actual.push_back(col);
             FB(energia, fila+1, mejor, actual);
             actual.pop_back();
