@@ -8,7 +8,13 @@ std::vector<int> encontrarSeamBacktracking(const std::vector<std::vector<double>
         mejor.push_back(0);
     }
     std::vector<int> actual =  {};
-    return BT(energia, 0, mejor, actual);
+    
+    std::vector<int> res = BT(energia, 0, mejor, actual);
+
+    for (int i=0; i < res.size(); i++){
+        res[i] += 1;
+    }
+    return res;
 }
 
 double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz, const std::vector<int>& seam) {
