@@ -56,5 +56,14 @@ std::vector<int> encontrarSeamFuerzaBruta(const std::vector<std::vector<double>>
         mejor.push_back(0);
     }
     std::vector<int> actual =  {};
-    return FB(energia, 0, mejor, actual);
+
+    std::vector<int> res = FB(energia, 0, mejor, actual);
+
+    // rango de columnas: 1 a n
+    for (int i=0; i < res.size(); i++){
+        res[i] += 1;
+    }
+
+    return res;
+    
 }
