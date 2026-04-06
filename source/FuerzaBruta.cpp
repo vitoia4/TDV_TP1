@@ -20,34 +20,43 @@ bool costura_valida(std::vector<int> actual) {
 
 std::vector<int> FB(const std::vector<std::vector<double>>& energia, int fila, std::vector<int>&mejor, std::vector<int> actual) {
     if(fila == energia.size()){
-        if(costura_valida(actual) && calcularEnergiaSeam(energia, actual) < calcularEnergiaSeam(energia, mejor)){
+        if(calcularEnergiaSeam(energia, actual) < calcularEnergiaSeam(energia, mejor)){
             mejor = actual;
             
         }
         return mejor;
-
     }
-    else{
+
+    if(fila==0){
         for (int col=0; col < energia[1].size(); col++){
             actual.push_back(col);
             FB(energia, fila+1, mejor, actual);
             actual.pop_back();
+            }
+        }
 
-            if(col>0){ // primer columna
-                actual.push_back(col-1);
+    else{
+            int ult_columna = actual.back();
+
+            actual.push_back(ult_columna);
+            FB(energia, fila+1, mejor, actual);
+            actual.pop_back();
+
+            if(ult_columna>0){ // primer columna
+                actual.push_back(ult_columna-1);
                 FB(energia, fila+1, mejor, actual);
                 actual.pop_back();
             }
-            if(col<energia[1].size()){ // ultima columna
-                actual.push_back(col+1);
+            if(ult_columna<energia[1].size()-1){ // ultima columna
+                actual.push_back(ult_columna+1);
                 FB(energia, fila+1, mejor, actual);
                 actual.pop_back();
             }
         }
+
+    return mejor;
     }
-
-}
-
+    
 
 std::vector<int> encontrarSeamFuerzaBruta(const std::vector<std::vector<double>>& energia) {
     std::vector<int> mejor =  {};

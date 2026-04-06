@@ -41,7 +41,6 @@ std::vector<int> BT(const std::vector<std::vector<double>>& energia, int fila, s
             actual.push_back(col);
             BT(energia, fila+1, mejor, actual);
             actual.pop_back();
-            
             }
         }
 
