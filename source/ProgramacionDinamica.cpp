@@ -79,13 +79,16 @@ std::vector<int> encontrarSeamPD(const std::vector<std::vector<double>>& energia
 
         double minimo = std::min({izq,ab,der});
 
+        // iz mejor o igual al resto
         if(izq <= ab && izq <= der){
             rta.push_back(ult_col-1);
         }
+        // der mejor o igual al resto
         else if (der <= ab && der <= izq){
             rta.push_back(ult_col+1);
         }
         else {
+            // else, abajo mejor
             rta.push_back(ult_col);
         }
     }
