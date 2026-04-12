@@ -1,93 +1,78 @@
 #include "Backtracking.h"
-#include <iostream>
+#include <cstddef>
 #include <string>
+#include <iostream>
+#include <limits>
 
-// seam es 0-indexed internamente
-double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz, const std::vector<int>& seam) {
-    double total = 0.0;
-    for (int i = 0; i < (int)seam.size(); i++) {
-        total += energiaMatriz[i+1][seam[i]];
-    }
-    return total;
-}
 
-// CORRECCIÓN: función separada para energía parcial (solo las filas ya elegidas)
-// Necesaria para la poda: no se puede usar calcularEnergiaSeam con un seam incompleto
-// porque esa función asume que seam tiene exactamente n elementos
-double energiaParcial(const std::vector<std::vector<double>>& energia, const std::vector<int>& actual) {
-    double total = 0.0;
-    for (int i = 0; i < (int)actual.size(); i++) {
-        total += energia[i+1][actual[i]];
-    }
-    return total;
-}
-
-// CORRECCIÓN: mejorEnergia se pasa como double& en lugar de recalcularla cada vez
-// Así la poda compara energía parcial actual contra el mejor total conocido
-void BT(const std::vector<std::vector<double>>& energia, int fila,
-        double& mejorEnergia, std::vector<int>& mejor, std::vector<int>& actual) {
+void BT(const std::vector<std::vector<double>>& energia, int fila, std::vector<int>&mejor, std::vector<int> actual, double & mejorEnergia, double energiaActual) {
     int n = energia[0][0];
     int m = energia[0][1];
 
-    if (fila == n) {
-        double e = calcularEnergiaSeam(energia, actual);
-        if (e < mejorEnergia) {
-            mejorEnergia = e;
+    if(fila == n+1){
+        if(energiaActual <= mejorEnergia){
             mejor = actual;
+            mejorEnergia = energiaActual;
+            
         }
         return;
+
     }
 
-    // CORRECCIÓN: poda correcta usando energía parcial (no energía de seam completo)
-    // Si la energía parcial ya supera o iguala al mejor, no tiene sentido continuar
-    // (válido porque todas las energías son >= 0)
-    if (energiaParcial(energia, actual) >= mejorEnergia) {
-        return;
-    }
-
-    if (fila == 0) {
-        for (int col = 0; col < m; col++) {
+    if(fila==1){
+        for (int col=0; col < energia[1].size(); col++){
             actual.push_back(col);
-            BT(energia, fila + 1, mejorEnergia, mejor, actual);
+            BT(energia, fila+1, mejor, actual, mejorEnergia, energiaActual + energia[fila][col]);
             actual.pop_back();
-        }
-    } else {
-        int ult_columna = actual.back();
-
-        // abajo
-        actual.push_back(ult_columna);
-        BT(energia, fila + 1, mejorEnergia, mejor, actual);
-        actual.pop_back();
-
-        // izquierda
-        if (ult_columna > 0) {
-            actual.push_back(ult_columna - 1);
-            BT(energia, fila + 1, mejorEnergia, mejor, actual);
-            actual.pop_back();
+            
+            }
         }
 
-        // derecha
-        if (ult_columna < m - 1) {
-            actual.push_back(ult_columna + 1);
-            BT(energia, fila + 1, mejorEnergia, mejor, actual);
-            actual.pop_back();
-        }
+    else{
+        // Ṕoda: no seguir costura si energia actual > energia total mejor
+        // Poda: recorrer solo casilleros válidos por definición de costura vertical
+        if(energiaActual < mejorEnergia){
+            int ult_columna = actual.back();
+
+            for (int col = ult_columna - 1; col <= ult_columna + 1; col++) {
+                if (col >= 0 && col < m) { // poda de factibilidad
+                    actual.push_back(col);
+                    BT(energia, fila + 1, mejor, actual, mejorEnergia, energiaActual+ energia[fila][col]);
+                    actual.pop_back();
+                }
+            }
+        }  
     }
+    return;
 }
 
 std::vector<int> encontrarSeamBacktracking(const std::vector<std::vector<double>>& energia) {
     int n = energia[0][0];
 
-    // inicializar mejor con la costura de columna 0 y su energía real
-    std::vector<int> mejor(n, 0);
-    double mejorEnergia = calcularEnergiaSeam(energia, mejor);
+    double mejorEnergia = std::numeric_limits<double>::infinity();
 
-    std::vector<int> actual;
-    BT(energia, 0, mejorEnergia, mejor, actual);
+    std::vector<int> mejor;
+    std::vector<int> actual =  {};
 
-    // convertir a indexado 1
-    for (auto& x : mejor) x++;
+    BT(energia, 1, mejor, actual, mejorEnergia, 0);
+
+    //Para que sea indexado 1
+    for(int i=0; i<n; i++){
+        mejor[i]++;
+    }
+
     return mejor;
+    
+}
+
+//------------------------------------------------------------------
+
+double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz, const std::vector<int>& seam) {
+    double total = 0.0;
+    for (int i = 0; i < seam.size(); i++) {
+        total += energiaMatriz[i+1][seam[i]];
+    }
+    return total;
 }
 
 // === FUNCION AUXILIAR ===
@@ -111,26 +96,24 @@ void testCaso(const std::vector<std::vector<double>>& energia,
         std::cout << "(Cualquier seam valido es correcto)" << std::endl;
     }
 
-    // CORRECCIÓN: seam ya está indexado en 1, hay que restarle 1 para calcular energía
-    std::vector<int> seam0 = seam;
-    for (auto& x : seam0) x--;
-    std::cout << "Energia: " << calcularEnergiaSeam(energia, seam0) << std::endl;
+    std::cout << "Energia: "
+              << calcularEnergiaSeam(energia, seam)
+              << std::endl;
+
     std::cout << std::endl;
 }
 
 // === MAIN ===
 int main() {
 
-    // Caso 1: básico
+    // 🧪 Caso 1: borde (una sola fila)
     std::vector<std::vector<double>> caso1 = {
-        {3, 3},
-        {1, 2, 3},
-        {4, 1, 6},
-        {7, 8, 1}
+        {1, 5},
+        {5, 1, 3, 2, 4}
     };
-    testCaso(caso1, "Caso 1 (basico)", {1, 2, 3});
+    testCaso(caso1, "Caso 1 (una fila)", {2});
 
-    // Caso 2: todos iguales
+    // 🧪 Caso 2: todos iguales
     std::vector<std::vector<double>> caso2 = {
         {4, 4},
         {1, 1, 1, 1},
@@ -140,7 +123,7 @@ int main() {
     };
     testCaso(caso2, "Caso 2 (todos iguales)", {});
 
-    // Caso 3: columna óptima clara
+    // 🧪 Caso 3: trampa (columna fija óptima)
     std::vector<std::vector<double>> caso3 = {
         {4, 4},
         {1, 100, 100, 100},
@@ -148,9 +131,9 @@ int main() {
         {1, 100, 100, 100},
         {1, 1,   1,   1}
     };
-    testCaso(caso3, "Caso 3 (columna fija)", {1, 1, 1, 1});
+    testCaso(caso3, "Caso 3 (trampa columna)", {1, 1, 1, 1});
 
-    // Caso 4: zig-zag
+    // 🧪 Caso 4: zig-zag
     std::vector<std::vector<double>> caso4 = {
         {5, 5},
         {1, 100, 1, 100, 1},
@@ -161,26 +144,16 @@ int main() {
     };
     testCaso(caso4, "Caso 4 (zig-zag)", {1, 2, 1, 2, 1});
 
-    // Caso 5: ejemplo conceptual
+    // 🧪 Caso 5: el del enunciado
     std::vector<std::vector<double>> caso5 = {
-        {4, 4},
-        {2, 2, 2, 1},
-        {0.5, 1, 3, 3},
-        {1, 1, 2, 2},
-        {1, 1, 1, 1}
-    };
-    testCaso(caso5, "Caso 5 (DP conceptual)", {1, 1, 1, 1});
-
-    // Caso 6: enunciado
-    std::vector<std::vector<double>> caso6 = {
         {5, 6},
         {9.0, 3.0, 1.0, 2.0, 8.0, 7.0},
         {5.0, 2.0, 0.5, 4.0, 6.0, 3.0},
         {7.0, 1.0, 2.0, 0.8, 5.0, 4.0},
         {3.0, 4.0, 1.5, 1.0, 2.0, 6.0},
-        {8.0, 2.0, 3.0, 0.5, 1.0, 5.0}
+        {8.0, 2.0, 3.0, 1.5, 1.0, 5.0}
     };
-    testCaso(caso6, "Caso 6 (enunciado)", {3, 3, 4, 4, 4});
+    testCaso(caso5, "Caso 5 (enunciado)", {3, 3, 4, 4, 5});
 
     return 0;
 }

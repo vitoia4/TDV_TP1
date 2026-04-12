@@ -4,42 +4,35 @@
 #include <algorithm>
 #include <vector>
 
-// seam es 0-indexed internamente
-double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz, const std::vector<int>& seam) {
-    double total = 0.0;
-    for (int i = 0; i < (int)seam.size(); i++) {
-        total += energiaMatriz[i+1][seam[i]];
-    }
-    return total;
-}
-
-double PD(const std::vector<std::vector<double>>& energia, std::vector<std::vector<double>>& memo, int fila, int col) {
+double PD(const std::vector<std::vector<double>>& energia, std::vector<std::vector<double>> & memo, int fila, int col){
     int n = energia[0][0];
     int m = energia[0][1];
-
-    // columna fuera de rango: retornar infinito para que nunca sea elegida
-    if (col < 0 || col >= m) {
-        return std::numeric_limits<double>::infinity();
+    
+    if (col<0 || col>=m){
+        return std::numeric_limits<double>::infinity();     
     }
-
-    // caso base: última fila
-    if (fila == n - 1) {
+    
+    if (fila == n-1){
         memo[fila][col] = energia[fila+1][col];
         return memo[fila][col];
     }
 
-    // ya calculado
-    if (memo[fila][col] != -1.0) {
+    if (memo[fila][col] != -1.0){  
         return memo[fila][col];
     }
 
-    double abajo     = PD(energia, memo, fila+1, col);
-    double abajo_izq = PD(energia, memo, fila+1, col-1);
-    double abajo_der = PD(energia, memo, fila+1, col+1);
+    else{
+        double abajo = PD(energia, memo, fila+1, col);
+        double abajo_izq = PD(energia, memo, fila+1, col-1);
+        double abajo_der = PD(energia, memo, fila+1, col+1);
+        
+        double mejor = std::min({abajo, abajo_der, abajo_izq});
 
-    memo[fila][col] = energia[fila+1][col] + std::min({abajo, abajo_izq, abajo_der});
-    return memo[fila][col];
+        memo[fila][col] = energia[fila+1][col] + mejor;
+        return memo[fila][col];
+    }
 }
+
 
 std::vector<int> encontrarSeamPD(const std::vector<std::vector<double>>& energia) {
     int n = energia[0][0];
@@ -47,61 +40,68 @@ std::vector<int> encontrarSeamPD(const std::vector<std::vector<double>>& energia
 
     std::vector<std::vector<double>> memo(n, std::vector<double>(m, -1.0));
 
-    // llenar tabla DP para todas las columnas de la fila 0
-    for (int j = 0; j < m; j++) {
+    for(int j=0; j<m; j++){
         PD(energia, memo, 0, j);
     }
 
-    // elegir columna inicial: la de menor energía total en fila 0
+    //recuperar recorrido
     int mejorCol = 0;
-    for (int j = 1; j < m; j++) {
-        if (memo[0][j] < memo[0][mejorCol]) {
+    double menorEnergia = memo[0][0];
+
+    for(int j=1; j<m; j++){
+        if (memo[0][j] < menorEnergia){
             mejorCol = j;
+            menorEnergia = memo[0][j];
         }
     }
 
     std::vector<int> rta;
     rta.push_back(mejorCol);
 
-    // CORRECCIÓN: el loop va de i=0 a n-2 (reconstruimos n-1 pasos)
-    // En cada paso estamos en fila i y elegimos la mejor columna en fila i+1
-    // La versión original usaba memo[i] en lugar de memo[i+1], desplazando todo un índice
-    for (int i = 0; i < n - 1; i++) {
-
+    for(int i=1; i<n; i++){
         int ult_col = rta.back();
 
         double izq = std::numeric_limits<double>::infinity();
         double der = std::numeric_limits<double>::infinity();
 
-        double ab = memo[i+1][ult_col];
+        double ab = memo[i][ult_col];
 
-        if (ult_col > 0) {
-            izq = memo[i+1][ult_col - 1];
+        if(ult_col>0){
+            izq = memo[i][ult_col-1];
+        }
+        if(ult_col<m-1){
+            der = memo[i][ult_col+1];
         }
 
-        if (ult_col < m - 1) {
-            der = memo[i+1][ult_col + 1];
-        }
+        double minimo = std::min({izq,ab,der});
 
-        double minimo = std::min({izq, ab, der});
-
-        if (izq <= ab && izq <= der) {
-            rta.push_back(ult_col - 1);
+        if(izq <= ab && izq <= der){
+            rta.push_back(ult_col-1);
         }
-        else if (der < ab && der < izq) {
-            rta.push_back(ult_col + 1);
+        else if (der <= ab && der <= izq){
+            rta.push_back(ult_col+1);
         }
         else {
             rta.push_back(ult_col);
         }
     }
-
-    // convertir a indexado 1
-    for (int i = 0; i < n; i++) {
+    
+    //Para que la respuesta este indexado en 1
+    for(int i=0; i<n; i++){
         rta[i]++;
     }
 
     return rta;
+}
+
+
+//----------------------------------------------------------------------------
+double calcularEnergiaSeam(const std::vector<std::vector<double>>& energiaMatriz, const std::vector<int>& seam) {
+    double total = 0.0;
+    for (int i = 0; i < seam.size(); i++) {
+        total += energiaMatriz[i+1][seam[i]-1];
+    }
+    return total;
 }
 
 // === FUNCION AUXILIAR ===
@@ -125,17 +125,17 @@ void testCaso(const std::vector<std::vector<double>>& energia,
         std::cout << "(Cualquier seam valido es correcto)" << std::endl;
     }
 
-    // CORRECCIÓN: seam ya está indexado en 1, hay que restarle 1 para calcular energía
-    std::vector<int> seam0 = seam;
-    for (auto& x : seam0) x--;
-    std::cout << "Energia: " << calcularEnergiaSeam(energia, seam0) << std::endl;
+    std::cout << "Energia: "
+              << calcularEnergiaSeam(energia, seam)
+              << std::endl;
+
     std::cout << std::endl;
 }
 
 // === MAIN ===
 int main() {
 
-    // Caso 1: básico
+    // 🧪 Caso 1: básico
     std::vector<std::vector<double>> caso1 = {
         {3, 3},
         {1, 2, 3},
@@ -144,7 +144,7 @@ int main() {
     };
     testCaso(caso1, "Caso 1 (basico)", {1, 2, 3});
 
-    // Caso 2: todos iguales
+    // 🧪 Caso 2: todos iguales
     std::vector<std::vector<double>> caso2 = {
         {4, 4},
         {1, 1, 1, 1},
@@ -154,7 +154,7 @@ int main() {
     };
     testCaso(caso2, "Caso 2 (todos iguales)", {});
 
-    // Caso 3: columna óptima clara
+    // 🧪 Caso 3: columna óptima clara
     std::vector<std::vector<double>> caso3 = {
         {4, 4},
         {1, 100, 100, 100},
@@ -164,7 +164,7 @@ int main() {
     };
     testCaso(caso3, "Caso 3 (columna fija)", {1, 1, 1, 1});
 
-    // Caso 4: zig-zag
+    // 🧪 Caso 4: zig-zag
     std::vector<std::vector<double>> caso4 = {
         {5, 5},
         {1, 100, 1, 100, 1},
@@ -175,7 +175,7 @@ int main() {
     };
     testCaso(caso4, "Caso 4 (zig-zag)", {1, 2, 1, 2, 1});
 
-    // Caso 5: ejemplo conceptual
+    // 🧪 Caso 5: tu ejemplo conceptual
     std::vector<std::vector<double>> caso5 = {
         {4, 4},
         {2, 2, 2, 1},
@@ -185,7 +185,7 @@ int main() {
     };
     testCaso(caso5, "Caso 5 (DP conceptual)", {1, 1, 1, 1});
 
-    // Caso 6: enunciado
+    // 🧪 Caso 6: enunciado
     std::vector<std::vector<double>> caso6 = {
         {5, 6},
         {9.0, 3.0, 1.0, 2.0, 8.0, 7.0},
