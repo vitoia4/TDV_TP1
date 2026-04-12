@@ -8,6 +8,7 @@
 #include "FuerzaBruta.h"
 #include "Backtracking.h"
 #include "ProgramacionDinamica.h"
+#include <chrono>
 
 // Lee una matriz de energía desde un archivo de texto.
 // Formato esperado:
@@ -63,7 +64,17 @@ void modoNumerico(const std::string& rutaEntrada, const std::string& algoritmo) 
     imprimirMatriz(energia);
     std::cout << "\n";
 
+    // medir SOLO el algoritmo
+    auto start = std::chrono::high_resolution_clock::now();
+
     std::vector<int> seam = ejecutarAlgoritmo(energia, algoritmo);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed = end - start;
+
+    std::cout << "Tiempo (segundos): " << elapsed.count() << "\n";
+
+    
     imprimirSeam(seam, energia);
 
     std::string rutaSalida = "output/numericos/seam_" + algoritmo + ".txt";
@@ -79,14 +90,29 @@ void modoImagen(const std::string& rutaImagen, const std::string& algoritmo, int
     Imagen img(rutaImagen);
     std::cout << "Imagen cargada: " << img.ancho() << "x" << img.alto() << " px\n";
 
+    double tiempo_total = 0.0;
+
     for (int i = 0; i < iteraciones; i++) {
-        std::vector<int> seam = ejecutarAlgoritmo(img.obtenerMatrizEnergia(), algoritmo);
+        auto energia = img.obtenerMatrizEnergia();
+
+        auto start = std::chrono::high_resolution_clock::now();
+
+        std::vector<int> seam = ejecutarAlgoritmo(energia, algoritmo);
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> elapsed = end - start;
+        tiempo_total += elapsed.count();
+
         img.eliminarSeam(seam);
 
         if ((i + 1) % 10 == 0 || i == iteraciones - 1)
             std::cout << "Iteración " << (i + 1) << "/" << iteraciones
                       << " - Ancho actual: " << img.ancho() << " px\n";
     }
+
+    std::cout << "Tiempo total algoritmo (segundos): " << tiempo_total << "\n";
+    std::cout << "Tiempo promedio por iteración: " << tiempo_total / iteraciones << "\n";
 
     std::string rutaSalida = "output/imagenes/resultado_" + algoritmo + ".png";
     img.guardar(rutaSalida);
