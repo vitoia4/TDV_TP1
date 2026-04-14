@@ -4,8 +4,22 @@
 #include <iostream>
 #include <limits>
 
+// Contador global para llamadas recursivas
+static long long contador_BT = 0;
+
+long long obtenerContadorBT() {
+    return contador_BT;
+}
+
+void resetearContadorBT() {
+    contador_BT = 0;
+}
+
 
 void BT(const std::vector<std::vector<double>>& energia, int fila, std::vector<int>& mejor, std::vector<int> actual, double& mejorEnergia, double energiaActual) {
+    // Incrementar contador
+    contador_BT++;
+    
     // CAMBIO: n y m se leen con .size() porque la matriz ya no tiene fila de dimensiones
     int n = energia.size();
     int m = energia[0].size();

@@ -95,6 +95,7 @@ void modoImagen(const std::string& rutaImagen, const std::string& algoritmo, int
     for (int i = 0; i < iteraciones; i++) {
         auto energia = img.obtenerMatrizEnergia();
 
+        resetearContadorBT();
         auto start = std::chrono::high_resolution_clock::now();
 
         std::vector<int> seam = ejecutarAlgoritmo(energia, algoritmo);
@@ -103,6 +104,10 @@ void modoImagen(const std::string& rutaImagen, const std::string& algoritmo, int
 
         std::chrono::duration<double> elapsed = end - start;
         tiempo_total += elapsed.count();
+
+        if (algoritmo == "bt" && i == 0) {
+            std::cout << "Iteración 1 - Llamadas BT: " << obtenerContadorBT() << "\n";
+        }
 
         img.eliminarSeam(seam);
 
